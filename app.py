@@ -1,71 +1,77 @@
 import streamlit as st
 import requests
 import pandas as pd
+import re
 
-st.set_page_config(page_title="Rankiva Digital - SEO Lead Machine", layout="wide")
-st.title("🎯 RANKIVA DIGITAL - Outreach Tool")
+st.set_page_config(page_title="Rankiva Digital - SEO Prospector", layout="wide")
+st.title("🔍 RANKIVA DIGITAL - SEO Lead Prospector (Hot/Cold)")
 
 api_key = st.sidebar.text_input("Serper API Key", type="password")
 
-# Inputs
+# Input Section
 col1, col2, col3 = st.columns(3)
 with col1:
-    business_type = st.text_input("Business Name / Niche", "Plumbing")
+    niche = st.text_input("Business Niche", "Roofing")
 with col2:
-    city_name = st.text_input("City", "Tauranga")
+    city = st.text_input("City Name", "Tauranga")
 with col3:
-    country = st.selectbox("Country", ["New Zealand", "Australia", "USA", "UK", "Pakistan"])
+    country = st.selectbox("Select Country", ["New Zealand", "Australia", "USA", "UK", "Canada"])
 
-if st.button("GET LEADS & WRITE EMAILS"):
+def get_seo_status(reviews, rating):
+    if reviews <= 15 or rating < 4.0:
+        return "🔥 HOT (Low SEO/Traffic)"
+    elif reviews > 15 and reviews <= 50:
+        return "⚖️ WARM (Needs Improvement)"
+    else:
+        return "❄️ COLD (Strong SEO)"
+
+if st.button("EXTRACT SEO LEADS"):
     if not api_key:
-        st.error("Sidebar mein API Key dalen!")
+        st.error("Pehle API Key dalen!")
     else:
         url = "https://google.serper.dev/places"
-        payload = {"q": f"{business_type} in {city_name} {country}"}
+        payload = {"q": f"{niche} in {city} {country}"}
         headers = {'X-API-KEY': api_key, 'Content-Type': 'application/json'}
 
-        with st.spinner('Scanning Google Maps and drafting your personal emails...'):
+        with st.spinner('Scraping Map Data & Analyzing SEO...'):
             response = requests.post(url, headers=headers, json=payload)
             if response.status_code == 200:
                 results = response.json().get('places', [])
-                outreach_data = []
+                lead_list = []
 
                 for item in results:
-                    b_name = item.get('title', 'Business Owner')
-                    web_url = item.get('website', 'No Website')
+                    reviews = item.get('ratingCount', 0)
+                    rating = item.get('rating', 0)
+                    website = item.get('website', 'No Website')
                     
-                    # --- Updated Template with your Name ---
-                    subject = f"Feedback on your website - {b_name}"
-                    email_body = (
-                        f"Hi {b_name} Team,\n\n"
-                        f"I was recently browsing through local services in {city_name} and spent some time on your website. "
-                        f"I have to say, your {business_type} page is one of the best I’ve seen in terms of clarity and building trust with homeowners.\n\n"
-                        f"I’m Hafiz Amir Shahzad, an SEO specialist and founder of Rankiva Digital. Usually, I see websites that are cluttered, but yours has great potential. "
-                        f"With a little more 'Topical Authority' (adding some specific blog guides), I believe you could easily dominate the first page of Google in your area.\n\n"
-                        f"Have you ever considered adding an FAQ or a local blog section to boost your reach?\n\n"
-                        f"Best regards,\n"
-                        f"Hafiz Amir Shahzad\n"
-                        f"SEO Specialist | Rankiva Digital"
-                    )
-
-                    outreach_data.append({
-                        "Business Name": b_name,
-                        "Website": web_url,
-                        "Email Subject": subject,
-                        "Full Email": email_body
+                    # Determining SEO Status
+                    status = get_seo_status(reviews, rating)
+                    
+                    # Logic for Email (Based on common patterns)
+                    # Note: Direct email scraping needs a separate tool, 
+                    # but we can provide the domain for your manual outreach
+                    lead_list.append({
+                        "Status": status,
+                        "Business Name": item.get('title'),
+                        "Reviews": reviews,
+                        "Rating": rating,
+                        "Website": website,
+                        "Phone": item.get('phoneNumber', 'N/A'),
+                        "Address": item.get('address'),
+                        "Potential Email": f"info@{website.replace('https://', '').replace('http://', '').replace('www.', '').split('/')[0]}" if website != "No Website" else "N/A"
                     })
 
-                if outreach_data:
-                    df = pd.DataFrame(outreach_data)
-                    st.success(f"Mubarak ho! {len(df)} leads aur Hafiz Amir Shahzad ke naam ki emails tayyar hain.")
+                if lead_list:
+                    df = pd.DataFrame(lead_list)
+                    # Sort by Status to show HOT leads first
+                    df = df.sort_values(by="Status", ascending=False)
                     
-                    # Display Table
+                    st.success(f"Hamain {len(df)} leads mili hain. 'HOT' wali leads par tawajjo den!")
                     st.dataframe(df)
 
-                    # Download CSV
                     csv = df.to_csv(index=False).encode('utf-8')
-                    st.download_button("Download outreach_list.csv", csv, "rankiva_outreach.csv", "text/csv")
+                    st.download_button("Download Rankiva_Lead_Sheet.csv", csv, "rankiva_leads.csv", "text/csv")
                 else:
                     st.warning("Koi results nahi mile.")
             else:
-                st.error("API Error! Key check karen.")
+                st.error("API Error!")
