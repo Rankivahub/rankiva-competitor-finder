@@ -2,53 +2,58 @@ import streamlit as st
 import requests
 import pandas as pd
 
-# Page Configuration (Interface Setup)
-st.set_page_config(page_title="Rankiva Digital - Competitor Finder", layout="wide")
+st.set_page_config(page_title="Rankiva Digital - Lead Generator", layout="wide")
+st.title("🚀 RANKIVA DIGITAL - Map & SEO Lead Finder")
 
-st.title("🚀 RANKIVA DIGITAL - Competitor Finder")
-st.write("Niche, City, aur Country likhen taakay aap apne competitors dhoond saken.")
-
-# User Inputs (Design Boxes)
-col1, col2, col3 = st.columns(3)
-with col1:
-    niche = st.text_input("Niche / Business Type", "Real Estate")
-with col2:
-    city = st.text_input("City", "Tauranga")
-with col3:
-    country = st.text_input("Country", "New Zealand")
-
+# Sidebar for API Key
 api_key = st.sidebar.text_input("Serper API Key", type="password")
 
-if st.button("FIND COMPETITORS"):
+# User Inputs
+col1, col2 = st.columns(2)
+with col1:
+    query = st.text_input("Kya dhoondna hy? (e.g. Plumbers in Tauranga)", "Real Estate in Auckland")
+with col2:
+    min_reviews = st.number_input("Maximum Reviews (SEO Weakness)", value=10, help="Jin businesses ke reviews is se kam honge, wahi nazar aayenge.")
+
+if st.button("GENERATE WEAK SEO LEADS"):
     if not api_key:
-        st.error("Pehle sidebar mein apni Serper API Key dalen!")
+        st.error("Pehle Sidebar mein API Key dalen!")
     else:
-        query = f"{niche} in {city} {country}"
-        url = "https://google.serper.dev/search"
-        payload = {"q": query, "num": 100}
+        # Maps (Places) API use kar rahe hain taakay Maps ka data aaye
+        url = "https://google.serper.dev/places"
+        payload = {"q": query}
         headers = {'X-API-KEY': api_key, 'Content-Type': 'application/json'}
 
-        with st.spinner('Data fetch ho raha hai...'):
+        with st.spinner('Maps aur SEO Data fetch ho raha hai...'):
             response = requests.post(url, headers=headers, json=payload)
             if response.status_code == 200:
-                results = response.json().get('organic', [])
-                data = []
+                results = response.json().get('places', [])
+                
+                # Filter: Sirf wo jin ki SEO/Reviews weak hain
+                weak_leads = []
                 for item in results:
-                    data.append({
-                        "Business Name": item.get('title'),
-                        "Website": item.get('link'),
-                        "Description": item.get('snippet'),
-                        "Rank": results.index(item) + 1
-                    })
+                    reviews = item.get('ratingCount', 0)
+                    rating = item.get('rating', 0)
+                    
+                    if reviews <= min_reviews: # Filter logic
+                        weak_leads.append({
+                            "Business Name": item.get('title'),
+                            "Address": item.get('address'),
+                            "Rating": rating,
+                            "Reviews": reviews,
+                            "Website": item.get('website', 'No Website'),
+                            "Phone": item.get('phoneNumber', 'N/A'),
+                            "Status": "Weak SEO / Low Reviews"
+                        })
                 
-                df = pd.DataFrame(data)
-                
-                # Show Result Table (Bilkul image ki tarah)
-                st.success(f"{len(df)} Competitors mil gaye hain!")
-                st.table(df)
-                
-                # Download Button
-                csv = df.to_csv(index=False).encode('utf-8')
-                st.download_button("Download CSV (Excel)", csv, "rankiva_leads.csv", "text/csv")
+                if weak_leads:
+                    df = pd.DataFrame(weak_leads)
+                    st.success(f"Hamain {len(df)} aisi companies mili hain jin ki SEO behtar ki ja sakti hai!")
+                    st.table(df)
+                    
+                    csv = df.to_csv(index=False).encode('utf-8')
+                    st.download_button("Download Weak Leads (Excel)", csv, "rankiva_leads.csv", "text/csv")
+                else:
+                    st.warning("Koi aisi site nahi mili jis ke reviews itne kam hon. Filter thora barha kar check karen.")
             else:
-                st.error("API Key kaam nahi kar rahi.")
+                st.error("API Response mein masla hy. Key check karen.")
