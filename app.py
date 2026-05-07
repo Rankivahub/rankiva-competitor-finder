@@ -2,58 +2,61 @@ import streamlit as st
 import requests
 import pandas as pd
 
-st.set_page_config(page_title="Rankiva Digital - Lead Generator", layout="wide")
-st.title("🚀 RANKIVA DIGITAL - Map & SEO Lead Finder")
+st.set_page_config(page_title="Rankiva Lead & Mailer", layout="wide")
+st.title("🎯 RANKIVA DIGITAL - Lead Finder & Auto Mailer")
 
-# Sidebar for API Key
 api_key = st.sidebar.text_input("Serper API Key", type="password")
 
-# User Inputs
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 with col1:
-    query = st.text_input("Kya dhoondna hy? (e.g. Plumbers in Tauranga)", "Real Estate in Auckland")
+    business = st.text_input("Business Name", "Plumber")
 with col2:
-    min_reviews = st.number_input("Maximum Reviews (SEO Weakness)", value=10, help="Jin businesses ke reviews is se kam honge, wahi nazar aayenge.")
+    city = st.text_input("City", "Tauranga")
+with col3:
+    country = st.selectbox("Country", ["New Zealand", "Australia", "USA", "UK"])
 
-if st.button("GENERATE WEAK SEO LEADS"):
+if st.button("GENERATE LEADS & EMAILS"):
     if not api_key:
-        st.error("Pehle Sidebar mein API Key dalen!")
+        st.error("Sidebar mein API Key dalen!")
     else:
-        # Maps (Places) API use kar rahe hain taakay Maps ka data aaye
         url = "https://google.serper.dev/places"
-        payload = {"q": query}
+        payload = {"q": f"{business} in {city} {country}"}
         headers = {'X-API-KEY': api_key, 'Content-Type': 'application/json'}
 
-        with st.spinner('Maps aur SEO Data fetch ho raha hai...'):
+        with st.spinner('Scrutinizing leads and writing emails...'):
             response = requests.post(url, headers=headers, json=payload)
             if response.status_code == 200:
                 results = response.json().get('places', [])
+                final_data = []
                 
-                # Filter: Sirf wo jin ki SEO/Reviews weak hain
-                weak_leads = []
                 for item in results:
-                    reviews = item.get('ratingCount', 0)
-                    rating = item.get('rating', 0)
+                    name = item.get('title')
+                    rev = item.get('ratingCount', 0)
+                    rat = item.get('rating', 0)
+                    web = item.get('website')
                     
-                    if reviews <= min_reviews: # Filter logic
-                        weak_leads.append({
-                            "Business Name": item.get('title'),
-                            "Address": item.get('address'),
-                            "Rating": rating,
-                            "Reviews": reviews,
-                            "Website": item.get('website', 'No Website'),
-                            "Phone": item.get('phoneNumber', 'N/A'),
-                            "Status": "Weak SEO / Low Reviews"
-                        })
+                    # --- AI Email Logic (Trust Building) ---
+                    if not web:
+                        subject = f"Question about {name}'s online presence"
+                        body = f"Hi {name} Team,\n\nI was looking for {business} services in {city} and couldn't find your website. In 2026, 90% of customers book online. I can help you get a professional site to capture these leads.\n\nBest,\nRankiva Digital"
+                    elif rev < 10:
+                        subject = f"Improving {name}'s Google visibility"
+                        body = f"Hi {name} Team,\n\nI noticed your business has great potential but only {rev} reviews. This is making your competitors rank higher. I have a strategy to boost your rating and organic traffic.\n\nRegards,\nRankiva Digital"
+                    else:
+                        subject = f"Growth strategy for {name}"
+                        body = f"Hi {name},\n\nYour {rat} star rating is good, but you're missing out on top-page traffic for '{business}' in {city}. Can we discuss an SEO audit?\n\nBest,\nRankiva Digital"
+
+                    final_data.append({
+                        "Business Name": name,
+                        "Website": web if web else "NO WEBSITE",
+                        "Reviews": rev,
+                        "Email Subject": subject,
+                        "Email Content": body
+                    })
                 
-                if weak_leads:
-                    df = pd.DataFrame(weak_leads)
-                    st.success(f"Hamain {len(df)} aisi companies mili hain jin ki SEO behtar ki ja sakti hai!")
-                    st.table(df)
-                    
-                    csv = df.to_csv(index=False).encode('utf-8')
-                    st.download_button("Download Weak Leads (Excel)", csv, "rankiva_leads.csv", "text/csv")
-                else:
-                    st.warning("Koi aisi site nahi mili jis ke reviews itne kam hon. Filter thora barha kar check karen.")
-            else:
-                st.error("API Response mein masla hy. Key check karen.")
+                df = pd.DataFrame(final_data)
+                st.success("Data aur Personalized Emails tayyar hain!")
+                st.dataframe(df)
+                
+                csv = df.to_csv(index=False).encode('utf-8')
+                st.download_button("Download Data + Emails", csv, "rankiva_outreach.csv", "text/csv")
