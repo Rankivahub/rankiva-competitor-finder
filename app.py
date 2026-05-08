@@ -1,77 +1,75 @@
 import streamlit as st
 import requests
-import pandas as pd
-import re
+import google.generativeai as genai
+from groq import Groq
 
-st.set_page_config(page_title="Rankiva Digital - SEO Prospector", layout="wide")
-st.title("🔍 RANKIVA DIGITAL - SEO Lead Prospector (Hot/Cold)")
+# 1. LUXURY THEME SETUP (Black, Gold, Emerald Green)
+st.set_page_config(page_title="Rankiva Mega AI", layout="wide")
 
-api_key = st.sidebar.text_input("Serper API Key", type="password")
+st.markdown("""
+    <style>
+    .main { background-color: #000000; color: #ffffff; }
+    .stButton>button { 
+        background-color: #d4af37; color: black; font-weight: bold;
+        border-radius: 10px; border: 2px solid #1e5631;
+    }
+    .stTextInput>div>div>input { background-color: #0b2d1a; color: #d4af37; border: 1px solid #d4af37; }
+    h1 { color: #d4af37; text-align: center; border-bottom: 2px solid #1e5631; padding-bottom: 10px; }
+    .stChatMessage { background-color: #0b2d1a; border-left: 5px solid #d4af37; }
+    .sidebar .sidebar-content { background-color: #000000; }
+    </style>
+    """, unsafe_allow_input_True)
 
-# Input Section
-col1, col2, col3 = st.columns(3)
-with col1:
-    niche = st.text_input("Business Niche", "Roofing")
-with col2:
-    city = st.text_input("City Name", "Tauranga")
-with col3:
-    country = st.selectbox("Select Country", ["New Zealand", "Australia", "USA", "UK", "Canada"])
+st.title("🏆 RANKIVA MEGA AI - Premium SEO Agent")
 
-def get_seo_status(reviews, rating):
-    if reviews <= 15 or rating < 4.0:
-        return "🔥 HOT (Low SEO/Traffic)"
-    elif reviews > 15 and reviews <= 50:
-        return "⚖️ WARM (Needs Improvement)"
-    else:
-        return "❄️ COLD (Strong SEO)"
+# 2. SIDEBAR CONFIGURATION
+st.sidebar.markdown("<h2 style='color: #d4af37;'>Settings</h2>", unsafe_allow_input_True)
+groq_key = st.sidebar.text_input("Groq API Key (Fast Chat)", type="password")
+gemini_key = st.sidebar.text_input("Gemini API Key (Audit)", type="password")
+serper_key = st.sidebar.text_input("Serper API Key (Search)", type="password")
 
-if st.button("EXTRACT SEO LEADS"):
-    if not api_key:
-        st.error("Pehle API Key dalen!")
-    else:
-        url = "https://google.serper.dev/places"
-        payload = {"q": f"{niche} in {city} {country}"}
-        headers = {'X-API-KEY': api_key, 'Content-Type': 'application/json'}
+# Initialize AI Clients
+if groq_key:
+    groq_client = Groq(api_key=groq_key)
+if gemini_key:
+    genai.configure(api_key=gemini_key)
+    gemini_model = genai.GenerativeModel('gemini-1.5-flash')
 
-        with st.spinner('Scraping Map Data & Analyzing SEO...'):
-            response = requests.post(url, headers=headers, json=payload)
-            if response.status_code == 200:
-                results = response.json().get('places', [])
-                lead_list = []
+# 3. CHAT INTERFACE
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-                for item in results:
-                    reviews = item.get('ratingCount', 0)
-                    rating = item.get('rating', 0)
-                    website = item.get('website', 'No Website')
-                    
-                    # Determining SEO Status
-                    status = get_seo_status(reviews, rating)
-                    
-                    # Logic for Email (Based on common patterns)
-                    # Note: Direct email scraping needs a separate tool, 
-                    # but we can provide the domain for your manual outreach
-                    lead_list.append({
-                        "Status": status,
-                        "Business Name": item.get('title'),
-                        "Reviews": reviews,
-                        "Rating": rating,
-                        "Website": website,
-                        "Phone": item.get('phoneNumber', 'N/A'),
-                        "Address": item.get('address'),
-                        "Potential Email": f"info@{website.replace('https://', '').replace('http://', '').replace('www.', '').split('/')[0]}" if website != "No Website" else "N/A"
-                    })
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-                if lead_list:
-                    df = pd.DataFrame(lead_list)
-                    # Sort by Status to show HOT leads first
-                    df = df.sort_values(by="Status", ascending=False)
-                    
-                    st.success(f"Hamain {len(df)} leads mili hain. 'HOT' wali leads par tawajjo den!")
-                    st.dataframe(df)
+if prompt := st.chat_input("Amir: Dhoondo weak roofing sites in Auckland..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-                    csv = df.to_csv(index=False).encode('utf-8')
-                    st.download_button("Download Rankiva_Lead_Sheet.csv", csv, "rankiva_leads.csv", "text/csv")
-                else:
-                    st.warning("Koi results nahi mile.")
-            else:
-                st.error("API Error!")
+    with st.chat_message("assistant"):
+        if not all([groq_key, gemini_key, serper_key]):
+            st.error("Pehle teeno (3) Keys sidebar mein dalen!")
+        else:
+            # Step A: Serper Search
+            st.write("🟢 **Serper:** Data nikal raha hoon...")
+            url = "https://google.serper.dev/places"
+            payload = {"q": prompt}
+            headers = {'X-API-KEY': serper_key, 'Content-Type': 'application/json'}
+            res = requests.post(url, headers=headers, json=payload).json().get('places', [])
+            
+            # Step B: Gemini Audit (High Quality Analysis)
+            st.write("🟡 **Gemini:** SEO Audit ho raha hy...")
+            audit_query = f"Audit these leads for SEO gaps: {str(res[:5])}. Give priority to 'No Website' or 'Low Reviews'. Answer in Urdu/English mix."
+            audit_report = gemini_model.generate_content(audit_query).text
+            
+            # Step C: Groq Response (Lightning Fast Delivery)
+            st.write("⚡ **Groq:** Report finalize ho rahi hy...")
+            final_chat = groq_client.chat.completions.create(
+                messages=[{"role": "user", "content": f"Summarize this SEO report for Amir Shahzad: {audit_report}"}],
+                model="llama3-8b-8192"
+            ).choices[0].message.content
+            
+            st.markdown(final_chat)
+            st.session_state.messages.append({"role": "assistant", "content": final_chat})
