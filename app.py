@@ -1,115 +1,115 @@
 import streamlit as st
-import pandas as pd
 import requests
 import json
 
-# --- 1. PAGE SETUP & DESIGN ---
-st.set_page_config(page_title="Rankiva Hub AI", page_icon="🌿", layout="wide")
+# --- 1. PAGE SETUP & THEME (Rankiva Branding) ---
+st.set_page_config(page_title="Rankiva Agency AI", page_icon="🌿", layout="wide")
 
 st.markdown("""
     <style>
     .stApp { background-color: #040d04; color: #d0f0d0; }
     .header-container { display: flex; align-items: center; margin-top: -50px; margin-bottom: 25px; }
-    .css-logo { width: 50px; height: 50px; background: radial-gradient(circle at 30% 30%, #57ff91, #1e5631); border-radius: 50%; margin-right: 15px; box-shadow: 0 0 15px #00ff7f; border: 2px solid #00ff7f; position: relative; }
+    .css-logo { width: 50px; height: 50px; background: radial-gradient(circle at 30% 30%, #57ff91, #1e5631); border-radius: 50%; margin-right: 15px; box-shadow: 0 0 15px #00ff7f; border: 2px solid #00ff7f; }
     .brand-title { color: #00ff7f !important; font-size: 38px !important; font-weight: 800; margin: 0; }
     
     .stTextInput>div>div>input { background-color: #0a1f0a !important; color: #00ff7f !important; border: 2px solid #2e8b57 !important; height: 48px; }
-    .stButton>button { background: linear-gradient(90deg, #1e5631, #00ff7f) !important; color: #040d04 !important; font-weight: bold !important; height: 48px; width: 100%; border-radius: 8px !important; }
+    .stButton>button { background: linear-gradient(90deg, #1e5631, #00ff7f) !important; color: #040d04 !important; font-weight: bold !important; height: 48px; border-radius: 8px !important; width: 100%; }
     
-    .custom-table { width: 100%; border-collapse: collapse; border: 1px solid #2e8b57; background-color: #0a1f0a; border-radius: 10px; overflow: hidden; table-layout: fixed; }
-    .custom-table th { background-color: #0a1f0a; color: #00ff7f !important; padding: 12px; text-align: left; border-bottom: 2px solid #2e8b57; font-size: 14px; }
-    .custom-table td { padding: 12px; border-bottom: 1px solid #1e3a1e; font-size: 13px; word-wrap: break-word; white-space: normal; vertical-align: top; color: #d0f0d0; }
+    /* Agency Table Display */
+    .agency-table { width: 100%; border-collapse: collapse; border: 1px solid #2e8b57; background-color: #0a1f0a; border-radius: 12px; overflow: hidden; margin-bottom: 30px; }
+    .agency-table th { background-color: #1a3a1e; color: #00ff7f !important; padding: 15px; text-align: left; border: 1px solid #2e8b57; font-size: 15px; width: 25%; }
+    .agency-table td { padding: 15px; border: 1px solid #1e3a1e; font-size: 14px; vertical-align: top; color: #d0f0d0; line-height: 1.6; }
     
     section[data-testid="stSidebar"] { background-color: #0a1f0a; border-right: 1px solid #2e8b57; }
-    .sheet-header { color: #00ff7f !important; font-size: 18px !important; font-weight: bold; margin-top: 15px; border-left: 4px solid #00ff7f; padding-left: 10px; }
+    .section-label { color: #00ff7f !important; font-size: 20px !important; font-weight: bold; margin-bottom: 15px; padding-left: 10px; border-left: 5px solid #00ff7f; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. SIDEBAR ---
+# --- 2. SIDEBAR CONFIG ---
 with st.sidebar:
-    st.header("🔑 API CONFIG")
+    st.header("🔑 SYSTEM ACCESS")
     ser_key = st.text_input("Serper API Key", type="password")
     gem_key = st.text_input("Gemini API Key", type="password")
     grq_key = st.text_input("Groq API Key", type="password")
     st.markdown("---")
-    st.info("Hafiz Amir Shahzad - Rankiva Hub")
+    st.info("Hafiz Amir Shahzad\nSenior SEO Specialist\nRankiva Hub")
 
-# --- 3. HEADER ---
-st.markdown('<div class="header-container"><div class="css-logo"></div><div class="brand-title">RANKIVA HUB</div></div>', unsafe_allow_html=True)
+# --- 3. BRANDING ---
+st.markdown('<div class="header-container"><div class="css-logo"></div><div class="brand-title">RANKIVA AGENCY ENGINE</div></div>', unsafe_allow_html=True)
 
-# --- 4. ACTION AREA ---
-col_in, col_go = st.columns([3, 1])
-with col_in:
-    url_input = st.text_input("URL", placeholder="https://example.com", label_visibility="collapsed")
-with col_go:
-    run_btn = st.button("🚀 DATA FIND START")
+# --- 4. INPUT SECTION ---
+col_url, col_btn = st.columns([3, 1])
+with col_url:
+    url_target = st.text_input("Analysis URL", placeholder="Paste website link here...", label_visibility="collapsed")
+with col_btn:
+    start_btn = st.button("🚀 START STRATEGIC ANALYSIS")
 
-# Refresh Button Location
-col_empty, col_refresh = st.columns([3, 1])
-with col_refresh:
-    if st.button("🔄 REFRESH SHEET"):
-        st.session_state.leads = []
-        st.rerun()
+if st.button("🔄 CLEAR DATA"):
+    st.session_state.agency_leads = []
+    st.rerun()
 
-# --- 5. AI ENGINE (Short & Strong) ---
-def run_ai_system(url, s_api, g_api, q_api):
+# --- 5. THE STRATEGIST ENGINE ---
+def run_agency_analysis(url, s_api, g_api, q_api):
     try:
-        # Improved search query for better data accuracy
-        search_q = f"official business name and niche and contact email for {url}"
-        search_res = requests.post("https://google.serper.dev/search", 
+        # Step 1: Deep Search using Serper
+        search_q = f'"{url}" business owner, contact email, top 2 organic competitors, niche services'
+        search_data = requests.post("https://google.serper.dev/search", 
                                    headers={'X-API-KEY': s_api, 'Content-Type': 'application/json'},
                                    json={"q": search_q}).json()
         
+        # Step 2: Advanced Brain (Groq with Llama 3.3 for Human Writing)
         q_headers = {"Authorization": f"Bearer {q_api}", "Content-Type": "application/json"}
-        # Strict prompt for Short & Strong email with Subject at top
-        prompt = f"""Using data: {str(search_res)[:600]}. 
-        Write a SHORT (max 100 words) and POWERFUL SEO outreach email for {url}.
-        1. Start with 'Subject: [Catchy Line]'.
-        2. Keep it professional and direct. 
-        3. Mention 2 critical SEO gaps. 
-        Sign-off: Best Regards, Hafiz Amir Shahzad, SEO Specialist, Rankiva Hub."""
+        
+        prompt = f"""
+        Act as a Senior SEO Outreach Strategist. 
+        Analyze the following data for {url}: {str(search_data)[:1000]}
+        
+        Follow these steps strictly:
+        1. Extract: Business Name, Owner (if any), Niche, Location, and Business Email.
+        2. Identify 2 Competitors and their SEO advantage over {url}.
+        3. Identify 3 critical SEO Gaps (e.g. missing high-intent pages, weak conversion, topical authority).
+        4. Write ONE highly personalized email:
+           - Start with asking about their well-being.
+           - Compliment their specific work or site messaging.
+           - Mention 2 specific observations about their site.
+           - Naturally bridge into SEO gaps using competitor examples.
+           - Tone: Human consultant, calm, NO marketing hype, simple English.
+           - NO buzzwords like 'game changer' or 'unlock'.
+        
+        Sign-off: 
+        Best regards, 
+        Hafiz Amir Shahzad 
+        SEO Specialist 
+        Rankiva hub
+        """
         
         response = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=q_headers, 
                                  json={"model": "llama-3.3-70b-versatile", "messages": [{"role": "user", "content": prompt}]}).json()
         
-        return response['choices'][0]['message']['content'] if 'choices' in response else "Error."
-    except Exception:
-        return "Connection Error."
+        final_report = response['choices'][0]['message']['content']
+        return final_report
+    except Exception as e:
+        return f"System Error: {str(e)}"
 
-# --- 6. DATA STORAGE ---
-if 'leads' not in st.session_state: st.session_state.leads = []
+# --- 6. OUTPUT & DISPLAY ---
+if 'agency_leads' not in st.session_state: st.session_state.agency_leads = []
 
-if run_btn:
-    if not all([ser_key, grq_key, url_input]):
-        st.warning("Please fill all keys!")
+if start_btn:
+    if not all([ser_key, gem_key, grq_key, url_target]):
+        st.warning("Please configure all API keys in the sidebar.")
     else:
-        with st.spinner("Finding Accurate Data..."):
-            email_template = run_ai_system(url_input, ser_key, gem_key, grq_key)
-            # Extracting cleaner Business Name
-            clean_url = url_input.replace("https://","").replace("www.","").split('.')[0]
-            biz_name = clean_url.capitalize()
-            
-            st.session_state.leads.append([
-                "Owner/Manager", 
-                biz_name, 
-                "Target Industry", 
-                f"info@{url_input.replace('https://','').replace('www.','')}", 
-                "SEO Performance Audit", 
-                email_template
-            ])
+        with st.spinner("Analyzing Business, Gaps, and Competitors..."):
+            report = run_agency_analysis(url_target, ser_key, gem_key, grq_key)
+            st.session_state.agency_leads.append({"url": url_target, "report": report})
 
-# --- 7. FINAL TABLE ---
-st.markdown('<div class="sheet-header">📜 LIVE LEAD SHEET</div>', unsafe_allow_html=True)
-html_table = '<table class="custom-table"><thead><tr>'
-for h in ["Owner", "Business", "Niche", "Email", "Subject", "Mail Template"]:
-    html_table += f'<th>{h}</th>'
-html_table += '</tr></thead><tbody>'
+st.markdown('<div class="section-label">📜 STRATEGIC REPORTS</div>', unsafe_allow_html=True)
 
-for row in st.session_state.leads:
-    html_table += '<tr>' + ''.join(f'<td>{str(v)}</td>' for v in row) + '</tr>'
-
-if not st.session_state.leads:
-    html_table += '<tr><td colspan="6" style="text-align:center; padding:20px;">Sheet Empty.</td></tr>'
-
-html_table += '</tbody></table>'
-st.markdown(html_table, unsafe_allow_html=True)
+if st.session_state.agency_leads:
+    for item in st.session_state.agency_leads:
+        with st.container():
+            st.markdown(f"### Analysis for: {item['url']}")
+            # Text area with high height for full readability
+            st.text_area("Full Agency Report (Analysis + Email)", value=item['report'], height=600)
+            st.markdown("---")
+else:
+    st.info("No research data found. Start by entering a URL.")
