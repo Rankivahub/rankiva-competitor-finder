@@ -5,7 +5,7 @@ import json
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Rankiva Hub - AI Outreach", page_icon="🌿", layout="wide")
 
-# --- GREEN LUXURY CSS ---
+# --- GREEN LUXURY CSS (Fixed for Streamlit New Version) ---
 st.markdown("""
     <style>
     .main { background-color: #040d04; color: #d0f0d0; }
@@ -27,17 +27,16 @@ st.markdown("""
     section[data-testid="stSidebar"] { background-color: #061a06; }
     .stTextArea>div>div>textarea { background-color: #0a1f0a; color: white; border: 1px solid #2e8b57; }
     </style>
-    """, unsafe_allow_label_with_html=True)
+    """, unsafe_allow_html=True) # <-- Yahan fix kiya gaya hai
 
 st.title("🌿 RANKIVA HUB: ADVANCED AI OUTREACH")
-st.info("System is using Groq (Llama 3.3) for Grok-level intelligence.")
 
 # --- SIDEBAR CONFIG ---
 with st.sidebar:
     st.header("🔑 API DASHBOARD")
     serper_key = st.text_input("Serper API Key", type="password")
     gemini_key = st.text_input("Gemini API Key", type="password")
-    groq_key = st.text_input("Groq API Key (Llama/Grok Engine)", type="password")
+    groq_key = st.text_input("Groq API Key", type="password")
     st.write("---")
     my_name = st.text_input("Sender Name", value="Amir Shahzad")
 
@@ -50,27 +49,20 @@ if st.button("🚀 ANALYZE & GENERATE"):
     else:
         with st.spinner("Grok-Engine is extracting data..."):
             try:
-                # 1. SERPER: Business Data Extraction
+                # 1. SERPER: Business Data
                 s_res = requests.post("https://google.serper.dev/search", 
                                      headers={"X-API-KEY": serper_key, "Content-Type": "application/json"},
                                      data=json.dumps({"q": target_url})).json()
                 biz_name = s_res.get('organic', [{}])[0].get('title', 'Business Owner').split('-')[0].strip()
 
-                # 2. GEMINI: Technical SEO Audit
+                # 2. GEMINI: SEO Audit
                 g_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
-                g_res = requests.post(g_url, json={"contents": [{"parts": [{"text": f"SEO audit for {target_url}. List 3 big gaps. Short."}]}]}).json()
+                g_res = requests.post(g_url, json={"contents": [{"parts": [{"text": f"SEO audit for {target_url}. List 3 big technical gaps. Be brief."}]}]}).json()
                 audit = g_res['candidates'][0]['content']['parts'][0]['text']
 
-                # 3. GROQ (Llama 3.3 / Grok Style): Luxury Pitch
+                # 3. GROQ: Luxury Pitch
                 gr_url = "https://api.groq.com/openai/v1/chat/completions"
-                gr_prompt = f"""
-                Write a luxury SEO pitch for {biz_name} ({target_url}). 
-                - Start with trust-building praise. 
-                - Mention these technical gaps: {audit}. 
-                - Language: Professional, Easy English. 
-                - Include a UNIQUE Subject line starting with 'Subject:' and include the URL.
-                - From: {my_name} (Founder, Rankiva Digital)
-                """
+                gr_prompt = f"Write a luxury SEO pitch for {biz_name} ({target_url}). Praise them, mention gaps: {audit}. Professional easy English. Include Subject: line. From: {my_name}"
                 gr_res = requests.post(gr_url, 
                                      headers={"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"},
                                      json={"model": "llama-3.3-70b-versatile", "messages": [{"role": "user", "content": gr_prompt}]}).json()
@@ -90,7 +82,7 @@ if st.button("🚀 ANALYZE & GENERATE"):
                 with col2:
                     st.subheader("📧 Outreach Content")
                     lines = full_text.split('\n')
-                    subject = next((l for l in lines if l.lower().startswith("subject:")), "Subject: Question about " + target_url)
+                    subject = next((l for l in lines if l.lower().startswith("subject:")), "Subject: Inquiry for " + target_url)
                     body = full_text.replace(subject, "").strip()
                     
                     st.text_input("Subject Line:", value=subject.replace("Subject:", "").strip())
