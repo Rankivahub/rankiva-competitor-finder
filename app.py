@@ -3,7 +3,7 @@ import pandas as pd
 import requests
 import json
 
-# --- 1. PAGE SETUP & DESIGN (Wahi finalized look) ---
+# --- 1. PAGE SETUP & DESIGN (Finalized Look) ---
 st.set_page_config(page_title="Rankiva Hub AI", page_icon="🌿", layout="wide")
 
 st.markdown("""
@@ -14,14 +14,19 @@ st.markdown("""
     .brand-title { color: #00ff7f !important; font-size: 38px !important; font-weight: 800; margin: 0; }
     
     .stTextInput>div>div>input { background-color: #0a1f0a !important; color: #00ff7f !important; border: 2px solid #2e8b57 !important; height: 48px; }
+    
+    /* Main Action Button */
     .stButton>button { background: linear-gradient(90deg, #1e5631, #00ff7f) !important; color: #040d04 !important; font-weight: bold !important; height: 48px; width: 100%; border-radius: 8px !important; }
     
+    /* Refresh Button Styling */
+    div[data-testid="column"]:nth-child(2) button { background: #1a1a1a !important; color: #ff4b4b !important; border: 1px solid #ff4b4b !important; }
+
     .custom-table { width: 100%; border-collapse: collapse; border: 1px solid #2e8b57; background-color: #0a1f0a; border-radius: 10px; overflow: hidden; }
     .custom-table th { background-color: #0a1f0a; color: #00ff7f !important; padding: 12px; text-align: left; border-bottom: 2px solid #2e8b57; font-size: 16px; }
     .custom-table td { padding: 12px; border-bottom: 1px solid #1e3a1e; font-size: 14px; }
     
     section[data-testid="stSidebar"] { background-color: #0a1f0a; border-right: 1px solid #2e8b57; }
-    .sheet-header { color: #00ff7f !important; font-size: 18px !important; font-weight: bold; margin-top: 15px; border-left: 4px solid #00ff7f; padding-left: 10px; }
+    .sheet-header { color: #00ff7f !important; font-size: 18px !important; font-weight: bold; margin-top: 15px; border-left: 4px solid #00ff7f; padding-left: 10px; display: flex; justify-content: space-between; align-items: center; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -44,59 +49,61 @@ with col_in:
 with col_go:
     run_btn = st.button("🚀 DATA FIND START")
 
-# --- 5. AI ENGINE (Error Handling Fix) ---
+# --- 5. AI ENGINE (Llama 3.3 Versatile) ---
 def run_ai_system(url, s_api, g_api, q_api):
-    # Step 1: Serper Search
     try:
         search_res = requests.post("https://google.serper.dev/search", 
                                    headers={'X-API-KEY': s_api, 'Content-Type': 'application/json'},
-                                   json={"q": f"business owner and SEO gaps for {url}"}, timeout=10).json()
+                                   json={"q": f"business owner name and SEO gaps for {url}"}, timeout=10).json()
     except:
         search_res = {"error": "Search failed"}
 
-    # Step 2: Groq Email Generation (Fixing 'choices' error)
     q_headers = {"Authorization": f"Bearer {q_api}", "Content-Type": "application/json"}
-    prompt = f"""Write a professional SEO outreach email for {url} based on this data: {str(search_res)[:500]}. 
-    Greet them warmly, compliment the site, mention 2 SEO gaps, and 2 competitors. 
+    prompt = f"""Write a professional human-style SEO outreach email for {url}.
+    Use data: {str(search_res)[:500]}. 
+    1. Ask about well-being. 2. Compliment site. 3. Mention 2 site gaps. 4. Mention 2 competitors winning.
     Sign-off: Best Regards, Hafiz Amir Shahzad, SEO Specialist, Rankiva Hub."""
     
     try:
         response = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=q_headers, 
-                                 json={"model": "llama3-8b-8192", "messages": [{"role": "user", "content": prompt}]}, timeout=15)
+                                 json={"model": "llama-3.3-70b-versatile", "messages": [{"role": "user", "content": prompt}]}, timeout=15)
         res_json = response.json()
-        
-        if 'choices' in res_json:
-            return res_json['choices'][0]['message']['content']
-        else:
-            return f"Groq Error: {res_json.get('error', {}).get('message', 'Invalid Response')}"
-    except Exception as e:
-        return f"Connection Error: {str(e)}"
+        return res_json['choices'][0]['message']['content'] if 'choices' in res_json else "Error in generation."
+    except:
+        return "Connection Error."
 
-# --- 6. DATA STORAGE ---
+# --- 6. DATA STORAGE & REFRESH LOGIC ---
 if 'leads' not in st.session_state: st.session_state.leads = []
 
+# Action: Find Data
 if run_btn:
-    if not all([ser_key, gem_key, grq_key, url_input]):
-        st.warning("Pehle Sidebar mein Keys aur URL enter karein!")
+    if not all([ser_key, grq_key, url_input]):
+        st.warning("Keys aur URL lazmi bharein!")
     else:
-        with st.spinner("Analyzing Website & Competitors..."):
+        with st.spinner("Processing..."):
             email_body = run_ai_system(url_input, ser_key, gem_key, grq_key)
             biz = url_input.split('.')[-2].capitalize() if '.' in url_input else "Business"
-            new_lead = ["Founding Partner", biz, "SEO/Digital", f"admin@{url_input.replace('https://','').replace('www.','')}", f"Re: {url_input} - Performance Audit", email_body]
-            st.session_state.leads.append(new_lead)
+            st.session_state.leads.append(["Owner Found", biz, "Digital", f"admin@{url_input.replace('https://','').replace('www.','')}", f"Re: {url_input} SEO", email_body])
 
-# --- 7. FINAL TABLE (Green Headers) ---
-st.markdown('<div class="sheet-header">📜 LIVE LEAD SHEET</div>', unsafe_allow_html=True)
+# --- 7. FINAL TABLE & REFRESH BUTTON ---
+col_head, col_ref = st.columns([5, 1])
+with col_head:
+    st.markdown('<div class="sheet-header">📜 LIVE LEAD SHEET</div>', unsafe_allow_html=True)
+with col_ref:
+    if st.button("🔄 REFRESH"):
+        st.session_state.leads = []
+        st.rerun()
+
 html_table = '<table class="custom-table"><thead><tr>'
 for h in ["Owner", "Business", "Niche", "Email", "Subject", "Mail Template"]:
     html_table += f'<th>{h}</th>'
 html_table += '</tr></thead><tbody>'
 
 for row in st.session_state.leads:
-    html_table += '<tr>' + ''.join(f'<td>{str(v)[:100]}...</td>' for v in row) + '</tr>'
+    html_table += '<tr>' + ''.join(f'<td>{str(v)[:80]}...</td>' for v in row) + '</tr>'
 
 if not st.session_state.leads:
-    html_table += '<tr><td colspan="6" style="text-align:center; padding:20px;">No leads found. Start by entering a URL.</td></tr>'
+    html_table += '<tr><td colspan="6" style="text-align:center; padding:20px;">Sheet is empty.</td></tr>'
 
 html_table += '</tbody></table>'
 st.markdown(html_table, unsafe_allow_html=True)
