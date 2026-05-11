@@ -3,9 +3,9 @@ import requests
 import json
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="Rankiva Hub - AI Outreach", page_icon="🌿", layout="wide")
+st.set_page_config(page_title="Rankiva Hub - AI Outreach", page_icon="🌿", layout="wide", initial_sidebar_state="collapsed")
 
-# --- GREEN LUXURY CSS (Fixed for Streamlit New Version) ---
+# --- GREEN LUXURY CSS ---
 st.markdown("""
     <style>
     .main { background-color: #040d04; color: #d0f0d0; }
@@ -22,18 +22,20 @@ st.markdown("""
         border: none;
         width: 100%;
         padding: 12px;
+        margin-top: 10px;
     }
-    h1, h2, h3 { color: #00ff7f !important; }
+    h1, h2, h3 { color: #00ff7f !important; font-family: 'Montserrat', sans-serif; }
     section[data-testid="stSidebar"] { background-color: #061a06; }
     .stTextArea>div>div>textarea { background-color: #0a1f0a; color: white; border: 1px solid #2e8b57; }
+    .stAlert { background-color: #0a1f0a; color: #00ff7f; border: 1px solid #2e8b57; }
     </style>
-    """, unsafe_allow_html=True) # <-- Yahan fix kiya gaya hai
+    """, unsafe_allow_html=True)
 
-st.title("🌿 RANKIVA HUB: ADVANCED AI OUTREACH")
+st.title("🌿 RANKIVA HUB: SMART LEAD GENERATOR")
 
-# --- SIDEBAR CONFIG ---
+# --- SIDEBAR (KABHI ZARURAT HO TO SIDE SE KHOLEN) ---
 with st.sidebar:
-    st.header("🔑 API DASHBOARD")
+    st.header("🔑 API SETTINGS")
     serper_key = st.text_input("Serper API Key", type="password")
     gemini_key = st.text_input("Gemini API Key", type="password")
     groq_key = st.text_input("Groq API Key", type="password")
@@ -41,13 +43,13 @@ with st.sidebar:
     my_name = st.text_input("Sender Name", value="Amir Shahzad")
 
 # --- INPUT SECTION ---
-target_url = st.text_input("🌐 Enter Website URL to Analyze", placeholder="https://example-business.com")
+target_url = st.text_input("🌐 Enter Website URL", placeholder="https://example-business.com")
 
-if st.button("🚀 ANALYZE & GENERATE"):
+if st.button("🚀 GENERATE OUTREACH"):
     if not all([serper_key, gemini_key, groq_key, target_url]):
-        st.error("Please provide all keys and the URL.")
+        st.error("Please provide all keys in the Sidebar (click > on top left) and enter a URL.")
     else:
-        with st.spinner("Grok-Engine is extracting data..."):
+        with st.spinner("Rankiva AI is crafting your outreach..."):
             try:
                 # 1. SERPER: Business Data
                 s_res = requests.post("https://google.serper.dev/search", 
@@ -60,34 +62,41 @@ if st.button("🚀 ANALYZE & GENERATE"):
                 g_res = requests.post(g_url, json={"contents": [{"parts": [{"text": f"SEO audit for {target_url}. List 3 big technical gaps. Be brief."}]}]}).json()
                 audit = g_res['candidates'][0]['content']['parts'][0]['text']
 
-                # 3. GROQ: Luxury Pitch
+                # 3. GROQ (Llama 3.3): Luxury Pitch
                 gr_url = "https://api.groq.com/openai/v1/chat/completions"
-                gr_prompt = f"Write a luxury SEO pitch for {biz_name} ({target_url}). Praise them, mention gaps: {audit}. Professional easy English. Include Subject: line. From: {my_name}"
+                gr_prompt = f"Write a luxury SEO pitch for {biz_name} ({target_url}). Praise them, mention gaps: {audit}. Use professional easy English. Include Subject: line. From: {my_name}"
                 gr_res = requests.post(gr_url, 
                                      headers={"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"},
                                      json={"model": "llama-3.3-70b-versatile", "messages": [{"role": "user", "content": gr_prompt}]}).json()
                 
                 full_text = gr_res['choices'][0]['message']['content']
                 
-                # --- UI DISPLAY ---
+                # --- UI DISPLAY (AS PER YOUR REQUEST) ---
                 st.divider()
-                col1, col2 = st.columns([1, 2])
                 
+                # Parsing Subject
+                lines = full_text.split('\n')
+                subject = next((l for l in lines if l.lower().startswith("subject:")), "Subject: Inquiry regarding " + target_url)
+                body = full_text.replace(subject, "").strip()
+
+                # 1. Subject Box
+                st.subheader("📧 Email Subject")
+                st.text_input("", value=subject.replace("Subject:", "").strip(), key="subj")
+
+                # 2. Mail Template Box
+                st.subheader("✍️ Luxury Mail Template")
+                st.text_area("", value=body, height=400, key="body_text")
+
+                # 3. Business Info (Column System at bottom)
+                st.divider()
+                col1, col2 = st.columns(2)
                 with col1:
-                    st.subheader("🏢 Lead Details")
-                    st.success(f"**Business:** {biz_name}")
-                    st.markdown("**🔍 SEO Audit Summary:**")
-                    st.write(audit)
-                
+                    st.markdown("### 🏢 Business Details")
+                    st.info(f"**Target:** {biz_name}")
                 with col2:
-                    st.subheader("📧 Outreach Content")
-                    lines = full_text.split('\n')
-                    subject = next((l for l in lines if l.lower().startswith("subject:")), "Subject: Inquiry for " + target_url)
-                    body = full_text.replace(subject, "").strip()
-                    
-                    st.text_input("Subject Line:", value=subject.replace("Subject:", "").strip())
-                    st.text_area("Mail Template:", value=body, height=450)
-                
+                    st.markdown("### 🔍 Technical Audit")
+                    st.write(audit)
+
                 st.balloons()
 
             except Exception as e:
