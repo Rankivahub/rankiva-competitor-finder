@@ -25,14 +25,15 @@ st.markdown("""
         width: 100%;
         padding: 15px;
         font-size: 18px;
+        margin-bottom: 20px;
     }
     h1, h2, h3 { color: #00ff7f !important; font-family: 'Montserrat', sans-serif; text-align: center; }
-    /* Table Styling for Sheet */
     [data-testid="stDataFrame"] {
         border: 2px solid #2e8b57;
         border-radius: 10px;
         background-color: #0a1f0a;
     }
+    label { color: #00ff7f !important; font-weight: bold !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -48,22 +49,25 @@ with st.sidebar:
     st.write("---")
     my_name = st.text_input("Sender Name", value="Amir Shahzad")
 
-# --- INPUT SECTION ---
+# --- INPUT & BUTTON SECTION (Uper wala hissa) ---
 target_url = st.text_input("🌐 Enter Website URL:", placeholder="https://www.example.com")
+execute_btn = st.button("🚀 EXECUTE AI EXTRACTION")
 
-# Placeholder for the Sheet
+st.markdown("---")
+
+# --- SHEET SECTION (Niche wala hissa) ---
 st.markdown("### 📜 LIVE LEAD SHEET")
 sheet_placeholder = st.empty()
 
-# Pehle khali sheet dikhao
+# Default Khali Sheet
 empty_data = pd.DataFrame(columns=["Owner Name", "Business Name", "Niche", "Business Mail", "Email Subject", "Mail Template"])
 sheet_placeholder.dataframe(empty_data, use_container_width=True)
 
-if st.button("🚀 EXECUTE AI EXTRACTION"):
+if execute_btn:
     if not all([serper_key, gemini_key, groq_key, target_url]):
         st.error("Please provide all keys in the Sidebar (click > top left).")
     else:
-        with st.spinner("Extracting Data into Sheet..."):
+        with st.spinner("Extracting Data..."):
             try:
                 # 1. SERPER DATA
                 s_res = requests.post("https://google.serper.dev/search", 
@@ -76,23 +80,23 @@ if st.button("🚀 EXECUTE AI EXTRACTION"):
 
                 # 2. GEMINI AUDIT
                 g_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
-                g_res = requests.post(g_url, json={"contents": [{"parts": [{"text": f"SEO audit for {target_url}. 3 technical gaps. Short."}]}]}).json()
+                g_res = requests.post(g_url, json={"contents": [{"parts": [{"text": f"Quick SEO gaps for {target_url}. Very short."}]}]}).json()
                 audit = g_res['candidates'][0]['content']['parts'][0]['text']
 
                 # 3. GROQ PITCH
                 gr_url = "https://api.groq.com/openai/v1/chat/completions"
-                gr_prompt = f"Write a luxury SEO pitch for {biz_name} ({target_url}). Gaps: {audit}. Start with Subject: From: {my_name}"
+                gr_prompt = f"Write a luxury SEO pitch for {biz_name} ({target_url}). Start with Subject: line. From: {my_name}"
                 gr_res = requests.post(gr_url, 
                                      headers={"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"},
                                      json={"model": "llama-3.3-70b-versatile", "messages": [{"role": "user", "content": gr_prompt}]}).json()
                 full_text = gr_res['choices'][0]['message']['content']
                 
                 lines = full_text.split('\n')
-                subject = next((l for l in lines if l.lower().startswith("subject:")), "Subject: Inquiry for " + target_url).replace("Subject:", "").strip()
+                subject = next((l for l in lines if l.lower().startswith("subject:")), "Subject: Inquiry").replace("Subject:", "").strip()
                 body = full_text.replace(subject, "").strip()
                 email_guess = "info@" + target_url.split('//')[-1].replace('www.', '').split('/')[0]
 
-                # Update Sheet with real data
+                # Update Sheet
                 final_data = {
                     "Owner Name": ["Founding Partner"],
                     "Business Name": [biz_name],
@@ -105,13 +109,13 @@ if st.button("🚀 EXECUTE AI EXTRACTION"):
                 df_final = pd.DataFrame(final_data)
                 sheet_placeholder.dataframe(df_final, use_container_width=True)
 
-                st.success("✅ Lead Sheet Updated Successfully!")
+                st.success("✅ Lead Found & Added to Sheet!")
                 st.balloons()
                 
-                # Copying area for Mail Template
+                # Copy Area
                 st.markdown("---")
-                st.subheader("✍️ Quick Copy: Mail Template")
-                st.text_area("", value=body, height=350)
+                st.subheader("✍️ Copy Mail Template")
+                st.text_area("", value=body, height=300)
 
             except Exception as e:
                 st.error(f"Error: {str(e)}")
