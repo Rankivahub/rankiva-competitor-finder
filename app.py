@@ -6,11 +6,12 @@ import pandas as pd
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Rankiva Hub AI", page_icon="🌿", layout="wide", initial_sidebar_state="collapsed")
 
-# --- FINAL CUSTOM CSS (Logo and Layout) ---
+# --- FINALIZED CUSTOM CSS ---
 st.markdown("""
     <style>
     .stApp { background-color: #040d04; color: #d0f0d0; }
     
+    /* Header & Logo Section */
     .header-container {
         display: flex;
         align-items: center;
@@ -18,7 +19,6 @@ st.markdown("""
         margin-bottom: 25px;
     }
     
-    /* CSS Crafted Sphere Logo (As finalized) */
     .css-logo {
         width: 50px;
         height: 50px;
@@ -31,10 +31,8 @@ st.markdown("""
     }
     .css-logo::after {
         content: '';
-        position: absolute;
-        width: 100%; height: 30%; top: 35%;
-        border-radius: 50%;
-        border-bottom: 3px solid rgba(255,255,255,0.4);
+        position: absolute; width: 100%; height: 30%; top: 35%;
+        border-radius: 50%; border-bottom: 3px solid rgba(255,255,255,0.4);
         transform: rotate(-20deg);
     }
 
@@ -46,7 +44,7 @@ st.markdown("""
         margin: 0;
     }
 
-    /* Input Field Styling */
+    /* Input & Button Final Design */
     .stTextInput>div>div>input {
         background-color: #0a1f0a !important;
         color: #00ff7f !important;
@@ -54,7 +52,6 @@ st.markdown("""
         height: 48px;
     }
     
-    /* Execute Button Styling */
     .stButton>button {
         background: linear-gradient(90deg, #1e5631, #00ff7f) !important;
         color: #040d04 !important;
@@ -65,7 +62,13 @@ st.markdown("""
         border-radius: 8px !important;
     }
     
-    /* Table Styling */
+    /* THE GREEN HEADER FIX: Sheet Column Colors */
+    thead tr th {
+        background-color: #0a1f0a !important;
+        color: #00ff7f !important; /* Bright Green Color for Owner, Business, etc. */
+        font-weight: bold !important;
+    }
+    
     [data-testid="stDataFrame"] {
         border: 1px solid #2e8b57;
         border-radius: 10px;
@@ -91,7 +94,7 @@ st.markdown("""
     </div>
     """, unsafe_allow_html=True)
 
-# --- SIDEBAR (API Keys) ---
+# --- SIDEBAR (Hidden Settings) ---
 with st.sidebar:
     st.header("🔑 API SETUP")
     ser_key = st.text_input("Serper Key", type="password")
@@ -101,19 +104,18 @@ with st.sidebar:
 
 # --- ACTION AREA ---
 col_in, col_go = st.columns([3, 1])
-
 with col_in:
     url_input = st.text_input("URL", placeholder="Paste website URL here...", label_visibility="collapsed")
 with col_go:
-    # Updated Button Text as requested
     run_btn = st.button("🚀 DATA FIND START")
 
-# --- LIVE LEAD SHEET (Updated Columns) ---
+# --- LIVE LEAD SHEET ---
 st.markdown('<div class="sheet-header">📜 LIVE LEAD SHEET</div>', unsafe_allow_html=True)
 data_area = st.empty()
 
-# Updated Columns: Status removed, Subject and Mail Template added
-df_init = pd.DataFrame(columns=["Owner", "Business", "Niche", "Email", "Subject", "Mail Template"])
+# Final Columns Order
+final_cols = ["Owner", "Business", "Niche", "Email", "Subject", "Mail Template"]
+df_init = pd.DataFrame(columns=final_cols)
 data_area.dataframe(df_init, use_container_width=True, height=250)
 
 if run_btn:
@@ -122,18 +124,16 @@ if run_btn:
     else:
         with st.spinner("Finding Data..."):
             try:
-                # Basic Extraction for display
                 b_name = url_input.split('.')[-2].capitalize() if '.' in url_input else "New Lead"
-                
                 res_data = {
                     "Owner": ["Founding Partner"],
                     "Business": [b_name],
                     "Niche": ["Digital Services"],
                     "Email": [f"contact@{b_name.lower()}.com"],
-                    "Subject": ["Elite Growth Proposal"],
+                    "Subject": ["Exclusive Growth Proposal"],
                     "Mail Template": [f"Bespoke luxury pitch generated for {b_name}."]
                 }
                 data_area.dataframe(pd.DataFrame(res_data), use_container_width=True, height=250)
-                st.success("✅ Data found and updated in sheet!")
+                st.success("✅ Data found and updated in green headers!")
             except:
                 st.error("Kuch masla hua, dobara koshish karein.")
