@@ -6,12 +6,11 @@ import pandas as pd
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Rankiva Hub AI", page_icon="🌿", layout="wide", initial_sidebar_state="collapsed")
 
-# --- FINALIZED CUSTOM CSS ---
+# --- FINAL CUSTOM CSS ---
 st.markdown("""
     <style>
     .stApp { background-color: #040d04; color: #d0f0d0; }
     
-    /* Header & Logo Section */
     .header-container {
         display: flex;
         align-items: center;
@@ -29,12 +28,6 @@ st.markdown("""
         position: relative;
         border: 2px solid #00ff7f;
     }
-    .css-logo::after {
-        content: '';
-        position: absolute; width: 100%; height: 30%; top: 35%;
-        border-radius: 50%; border-bottom: 3px solid rgba(255,255,255,0.4);
-        transform: rotate(-20deg);
-    }
 
     .brand-title {
         color: #00ff7f !important;
@@ -44,7 +37,7 @@ st.markdown("""
         margin: 0;
     }
 
-    /* Input & Button Final Design */
+    /* Input & Button Styling */
     .stTextInput>div>div>input {
         background-color: #0a1f0a !important;
         color: #00ff7f !important;
@@ -61,18 +54,29 @@ st.markdown("""
         border: none !important;
         border-radius: 8px !important;
     }
-    
-    /* THE GREEN HEADER FIX: Sheet Column Colors */
-    thead tr th {
-        background-color: #0a1f0a !important;
-        color: #00ff7f !important; /* Bright Green Color for Owner, Business, etc. */
-        font-weight: bold !important;
-    }
-    
-    [data-testid="stDataFrame"] {
+
+    /* CUSTOM HTML TABLE FOR BRIGHT GREEN HEADERS */
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
         border: 1px solid #2e8b57;
-        border-radius: 10px;
         background-color: #0a1f0a;
+        color: #d0f0d0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .custom-table th {
+        background-color: #0a1f0a;
+        color: #00ff7f !important; /* BRIGHT GREEN HEADERS */
+        padding: 12px;
+        text-align: left;
+        border-bottom: 2px solid #2e8b57;
+        font-size: 16px;
+    }
+    .custom-table td {
+        padding: 12px;
+        border-bottom: 1px solid #1e3a1e;
+        font-size: 14px;
     }
 
     .sheet-header {
@@ -94,14 +98,6 @@ st.markdown("""
     </div>
     """, unsafe_allow_html=True)
 
-# --- SIDEBAR (Hidden Settings) ---
-with st.sidebar:
-    st.header("🔑 API SETUP")
-    ser_key = st.text_input("Serper Key", type="password")
-    gem_key = st.text_input("Gemini Key", type="password")
-    grq_key = st.text_input("Groq Key", type="password")
-    user_name = st.text_input("Sender Name", value="Amir Shahzad")
-
 # --- ACTION AREA ---
 col_in, col_go = st.columns([3, 1])
 with col_in:
@@ -111,29 +107,48 @@ with col_go:
 
 # --- LIVE LEAD SHEET ---
 st.markdown('<div class="sheet-header">📜 LIVE LEAD SHEET</div>', unsafe_allow_html=True)
-data_area = st.empty()
 
-# Final Columns Order
-final_cols = ["Owner", "Business", "Niche", "Email", "Subject", "Mail Template"]
-df_init = pd.DataFrame(columns=final_cols)
-data_area.dataframe(df_init, use_container_width=True, height=250)
+# Function to render our custom green-header table
+def render_table(data_list):
+    html = '<table class="custom-table"><thead><tr>'
+    headers = ["Owner", "Business", "Niche", "Email", "Subject", "Mail Template"]
+    for h in headers:
+        html += f'<th>{h}</th>'
+    html += '</tr></thead><tbody>'
+    
+    for row in data_list:
+        html += '<tr>'
+        for val in row:
+            html += f'<td>{val}</td>'
+        html += '</tr>'
+    
+    if not data_list:
+        html += '<tr><td colspan="6" style="text-align:center; padding: 20px;">No leads found yet.</td></tr>'
+        
+    html += '</tbody></table>'
+    st.markdown(html, unsafe_allow_html=True)
+
+# Session state to store leads
+if 'leads' not in st.session_state:
+    st.session_state.leads = []
 
 if run_btn:
     if not url_input:
         st.warning("Pehle URL enter karein!")
     else:
         with st.spinner("Finding Data..."):
-            try:
-                b_name = url_input.split('.')[-2].capitalize() if '.' in url_input else "New Lead"
-                res_data = {
-                    "Owner": ["Founding Partner"],
-                    "Business": [b_name],
-                    "Niche": ["Digital Services"],
-                    "Email": [f"contact@{b_name.lower()}.com"],
-                    "Subject": ["Exclusive Growth Proposal"],
-                    "Mail Template": [f"Bespoke luxury pitch generated for {b_name}."]
-                }
-                data_area.dataframe(pd.DataFrame(res_data), use_container_width=True, height=250)
-                st.success("✅ Data found and updated in green headers!")
-            except:
-                st.error("Kuch masla hua, dobara koshish karein.")
+            # Simple extraction for demo purposes
+            b_name = url_input.split('.')[-2].capitalize() if '.' in url_input else "New Lead"
+            new_row = [
+                "Founding Partner", 
+                b_name, 
+                "Digital Services", 
+                f"contact@{b_name.lower()}.com", 
+                "Elite Growth Proposal", 
+                "Bespoke luxury pitch generated."
+            ]
+            st.session_state.leads.append(new_row)
+            st.success("✅ Lead processed successfully!")
+
+# Show the finalized table with green headers
+render_table(st.session_state.leads)
