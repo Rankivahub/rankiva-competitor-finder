@@ -1,81 +1,102 @@
 import streamlit as st
 import requests
-import google.generativeai as genai
-from groq import Groq
+import json
 
-# 1. PREMIUM THEME SETUP (Black, Gold, Emerald Green)
-st.set_page_config(page_title="Rankiva Mega AI", layout="wide")
+# --- PAGE CONFIG ---
+st.set_page_config(page_title="Rankiva Hub - AI Outreach", page_icon="🌿", layout="wide")
 
+# --- GREEN LUXURY CSS ---
 st.markdown("""
     <style>
-    .stApp { background-color: #000000; color: #ffffff; }
-    .stButton>button { 
-        background-color: #d4af37; color: black; font-weight: bold;
-        border-radius: 8px; border: 2px solid #1e5631; width: 100%;
+    .main { background-color: #040d04; color: #d0f0d0; }
+    .stTextInput>div>div>input {
+        background-color: #0a1f0a;
+        color: #00ff7f;
+        border: 1px solid #2e8b57;
+        border-radius: 5px;
     }
-    .stTextInput>div>div>input { background-color: #0b2d1a; color: #d4af37; border: 1px solid #d4af37; }
-    h1 { color: #d4af37; text-align: center; border-bottom: 2px solid #1e5631; padding-bottom: 10px; }
-    .stChatMessage { background-color: #0b2d1a; border-left: 5px solid #d4af37; border-radius: 10px; margin-bottom: 10px; }
-    section[data-testid="stSidebar"] { background-color: #051a0d; border-right: 1px solid #d4af37; }
+    .stButton>button {
+        background: linear-gradient(90deg, #1e5631, #00ff7f);
+        color: #040d04;
+        font-weight: bold;
+        border: none;
+        width: 100%;
+        padding: 12px;
+    }
+    h1, h2, h3 { color: #00ff7f !important; }
+    section[data-testid="stSidebar"] { background-color: #061a06; }
+    .stTextArea>div>div>textarea { background-color: #0a1f0a; color: white; border: 1px solid #2e8b57; }
     </style>
-    """, unsafe_allow_html=True)
+    """, unsafe_allow_label_with_html=True)
 
-st.title("🏆 RANKIVA MEGA AI - SEO AGENT")
+st.title("🌿 RANKIVA HUB: ADVANCED AI OUTREACH")
+st.info("System is using Groq (Llama 3.3) for Grok-level intelligence.")
 
-# 2. SIDEBAR CONFIG
-st.sidebar.markdown("<h2 style='color: #d4af37;'>Control Center</h2>", unsafe_allow_html=True)
-groq_key = st.sidebar.text_input("Groq API Key", type="password")
-gemini_key = st.sidebar.text_input("Gemini API Key", type="password")
-serper_key = st.sidebar.text_input("Serper API Key", type="password")
+# --- SIDEBAR CONFIG ---
+with st.sidebar:
+    st.header("🔑 API DASHBOARD")
+    serper_key = st.text_input("Serper API Key", type="password")
+    gemini_key = st.text_input("Gemini API Key", type="password")
+    groq_key = st.text_input("Groq API Key (Llama/Grok Engine)", type="password")
+    st.write("---")
+    my_name = st.text_input("Sender Name", value="Amir Shahzad")
 
-# Initialize AI Clients
-if groq_key:
-    groq_client = Groq(api_key=groq_key)
-if gemini_key:
-    genai.configure(api_key=gemini_key)
-    gemini_model = genai.GenerativeModel('gemini-1.5-flash-latest')
+# --- INPUT SECTION ---
+target_url = st.text_input("🌐 Enter Website URL to Analyze", placeholder="https://example-business.com")
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-# 3. CHAT LOGIC
-if prompt := st.chat_input("Mujh se kuch bhi puchen ya SEO leads dhoondo..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
-
-    with st.chat_message("assistant"):
-        if not all([groq_key, gemini_key]):
-            st.warning("Amir sahib, pehle sidebar mein Keys mukammal karen.")
-        else:
+if st.button("🚀 ANALYZE & GENERATE"):
+    if not all([serper_key, gemini_key, groq_key, target_url]):
+        st.error("Please provide all keys and the URL.")
+    else:
+        with st.spinner("Grok-Engine is extracting data..."):
             try:
-                # Check for search intent
-                search_words = ["dhoondo", "find", "search", "leads", "extract", "list"]
-                is_search = any(word in prompt.lower() for word in search_words)
+                # 1. SERPER: Business Data Extraction
+                s_res = requests.post("https://google.serper.dev/search", 
+                                     headers={"X-API-KEY": serper_key, "Content-Type": "application/json"},
+                                     data=json.dumps({"q": target_url})).json()
+                biz_name = s_res.get('organic', [{}])[0].get('title', 'Business Owner').split('-')[0].strip()
 
-                if is_search and serper_key:
-                    st.write("🔍 **Serper:** Data nikal raha hoon...")
-                    url = "https://google.serper.dev/places"
-                    res = requests.post(url, headers={'X-API-KEY': serper_key}, json={"q": prompt}).json().get('places', [])
-                    
-                    st.write("🧠 **Gemini:** Audit shuru hy...")
-                    context = f"Analyze these leads for SEO specialist Amir Shahzad: {str(res[:5])}. Identify weak sites. Strategy in Urdu/English mix."
-                    response = gemini_model.generate_content(context).text
-                else:
-                    # Updated Groq model to fix 400 error
-                    chat_completion = groq_client.chat.completions.create(
-                        messages=[{"role": "system", "content": "You are a friendly AI assistant for Amir Shahzad, founder of Rankiva Digital. Talk in Urdu/English mix."},
-                                  {"role": "user", "content": prompt}],
-                        model="llama-3.1-8b-instant"
-                    )
-                    response = chat_completion.choices[0].message.content
+                # 2. GEMINI: Technical SEO Audit
+                g_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+                g_res = requests.post(g_url, json={"contents": [{"parts": [{"text": f"SEO audit for {target_url}. List 3 big gaps. Short."}]}]}).json()
+                audit = g_res['candidates'][0]['content']['parts'][0]['text']
 
-                st.markdown(response)
-                st.session_state.messages.append({"role": "assistant", "content": response})
+                # 3. GROQ (Llama 3.3 / Grok Style): Luxury Pitch
+                gr_url = "https://api.groq.com/openai/v1/chat/completions"
+                gr_prompt = f"""
+                Write a luxury SEO pitch for {biz_name} ({target_url}). 
+                - Start with trust-building praise. 
+                - Mention these technical gaps: {audit}. 
+                - Language: Professional, Easy English. 
+                - Include a UNIQUE Subject line starting with 'Subject:' and include the URL.
+                - From: {my_name} (Founder, Rankiva Digital)
+                """
+                gr_res = requests.post(gr_url, 
+                                     headers={"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"},
+                                     json={"model": "llama-3.3-70b-versatile", "messages": [{"role": "user", "content": gr_prompt}]}).json()
                 
+                full_text = gr_res['choices'][0]['message']['content']
+                
+                # --- UI DISPLAY ---
+                st.divider()
+                col1, col2 = st.columns([1, 2])
+                
+                with col1:
+                    st.subheader("🏢 Lead Details")
+                    st.success(f"**Business:** {biz_name}")
+                    st.markdown("**🔍 SEO Audit Summary:**")
+                    st.write(audit)
+                
+                with col2:
+                    st.subheader("📧 Outreach Content")
+                    lines = full_text.split('\n')
+                    subject = next((l for l in lines if l.lower().startswith("subject:")), "Subject: Question about " + target_url)
+                    body = full_text.replace(subject, "").strip()
+                    
+                    st.text_input("Subject Line:", value=subject.replace("Subject:", "").strip())
+                    st.text_area("Mail Template:", value=body, height=450)
+                
+                st.balloons()
+
             except Exception as e:
                 st.error(f"Error: {str(e)}")
