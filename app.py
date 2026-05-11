@@ -1,16 +1,15 @@
 import streamlit as st
-import requests
-import json
 import pandas as pd
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="Rankiva Hub AI", page_icon="🌿", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Rankiva Hub AI", page_icon="🌿", layout="wide", initial_sidebar_state="expanded")
 
 # --- FINAL CUSTOM CSS ---
 st.markdown("""
     <style>
     .stApp { background-color: #040d04; color: #d0f0d0; }
     
+    /* Header & Logo Section */
     .header-container {
         display: flex;
         align-items: center;
@@ -87,8 +86,26 @@ st.markdown("""
         border-left: 4px solid #00ff7f;
         padding-left: 10px;
     }
+    
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #0a1f0a;
+        border-right: 1px solid #2e8b57;
+    }
+    section[data-testid="stSidebar"] .stMarkdown h2 {
+        color: #00ff7f;
+    }
     </style>
     """, unsafe_allow_html=True)
+
+# --- SIDEBAR (Key Wala Hissa) ---
+with st.sidebar:
+    st.markdown("## 🔑 API KEYS")
+    ser_key = st.text_input("Serper Key", type="password")
+    gem_key = st.text_input("Gemini Key", type="password")
+    grq_key = st.text_input("Groq Key", type="password")
+    user_name = st.text_input("Sender Name", value="Amir Shahzad")
+    st.info("Keys yahan enter karein aur save rahegi.")
 
 # --- HEADER SECTION ---
 st.markdown("""
@@ -108,7 +125,7 @@ with col_go:
 # --- LIVE LEAD SHEET ---
 st.markdown('<div class="sheet-header">📜 LIVE LEAD SHEET</div>', unsafe_allow_html=True)
 
-# Function to render our custom green-header table
+# Function to render custom green-header table
 def render_table(data_list):
     html = '<table class="custom-table"><thead><tr>'
     headers = ["Owner", "Business", "Niche", "Email", "Subject", "Mail Template"]
@@ -133,11 +150,10 @@ if 'leads' not in st.session_state:
     st.session_state.leads = []
 
 if run_btn:
-    if not url_input:
-        st.warning("Pehle URL enter karein!")
+    if not all([ser_key, gem_key, grq_key, url_input]):
+        st.warning("Pehle Sidebar mein Keys aur URL enter karein!")
     else:
         with st.spinner("Finding Data..."):
-            # Simple extraction for demo purposes
             b_name = url_input.split('.')[-2].capitalize() if '.' in url_input else "New Lead"
             new_row = [
                 "Founding Partner", 
@@ -145,10 +161,10 @@ if run_btn:
                 "Digital Services", 
                 f"contact@{b_name.lower()}.com", 
                 "Elite Growth Proposal", 
-                "Bespoke luxury pitch generated."
+                f"Luxury pitch for {b_name} by {user_name}."
             ]
             st.session_state.leads.append(new_row)
             st.success("✅ Lead processed successfully!")
 
-# Show the finalized table with green headers
+# Show the table with green headers
 render_table(st.session_state.leads)
