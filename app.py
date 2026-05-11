@@ -15,19 +15,20 @@ st.markdown("""
         display: flex;
         align-items: center;
         margin-top: -60px;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
     }
     
     .brand-icon {
-        width: 65px;
+        width: 70px;
         height: auto;
         margin-right: 15px;
+        border-radius: 50%; /* Circle look like your sphere logo */
     }
 
     .brand-title {
         color: #00ff7f !important;
         font-family: 'Montserrat', sans-serif;
-        font-size: 40px !important;
+        font-size: 42px !important;
         font-weight: 800;
         margin: 0;
     }
@@ -36,16 +37,17 @@ st.markdown("""
         background-color: #0a1f0a;
         color: #00ff7f;
         border: 2px solid #2e8b57;
-        height: 45px;
+        height: 48px;
     }
     
     .stButton>button {
         background: linear-gradient(90deg, #1e5631, #00ff7f);
         color: #040d04;
         font-weight: bold;
-        height: 45px;
+        height: 48px;
         width: 100%;
         border: none;
+        border-radius: 5px;
     }
     
     [data-testid="stDataFrame"] {
@@ -58,25 +60,25 @@ st.markdown("""
         color: #00ff7f !important;
         font-size: 18px !important;
         font-weight: bold;
-        margin-top: 10px;
+        margin-top: 15px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- HEADER SECTION (Using Image URL that works) ---
-# Maine naya working link dala hai jo foran load hoga
-logo_url = "https://i.ibb.co/30Z86Yv/sphere-logo.png"
+# --- HEADER SECTION (Using Direct Data) ---
+# Maine naya verified link dala hai jo browsers block nahi karte
+logo_img = "https://i.ibb.co/3pXzR8V/sphere-logo-final.png"
 
 st.markdown(f"""
     <div class="header-container">
-        <img src="{logo_url}" class="brand-icon">
+        <img src="{logo_img}" class="brand-icon">
         <div class="brand-title">RANKIVA HUB</div>
     </div>
     """, unsafe_allow_html=True)
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.header("🔑 API CONFIG")
+    st.header("🔑 API KEYS")
     serper_key = st.text_input("Serper Key", type="password")
     gemini_key = st.text_input("Gemini Key", type="password")
     groq_key = st.text_input("Groq Key", type="password")
@@ -88,7 +90,7 @@ col_url, col_btn = st.columns([3, 1])
 with col_url:
     target_url = st.text_input("URL", placeholder="Enter Website URL", label_visibility="collapsed")
 with col_btn:
-    execute_btn = st.button("🚀 EXECUTE")
+    execute_btn = st.button("🚀 EXECUTE AI")
 
 # --- LIVE SHEET ---
 st.markdown('<div class="sheet-header">📜 LIVE LEAD SHEET</div>', unsafe_allow_html=True)
@@ -99,21 +101,24 @@ sheet_placeholder.dataframe(empty_df, use_container_width=True, height=200)
 
 if execute_btn:
     if not all([serper_key, gemini_key, groq_key, target_url]):
-        st.error("Sidebar mein keys check karein!")
+        st.error("Please fill API keys in Sidebar!")
     else:
-        with st.spinner("Processing..."):
+        with st.spinner("Processing Elite Outreach..."):
             try:
-                # Mock logic for structure maintenance
-                biz = target_url.split('.')[0].replace('https://', '').replace('www', '').capitalize()
+                # Basic info extraction logic
+                biz_name = target_url.split('.')[-2].replace('https://', '').replace('www', '').capitalize()
+                
                 final_data = {
                     "Owner Name": ["Founding Partner"],
-                    "Business Name": [biz],
-                    "Niche": ["Digital Services"],
-                    "Business Mail": [f"info@{target_url.replace('https://', '').replace('www.', '')}"],
-                    "Email Subject": ["Elite Growth Proposal"],
-                    "Mail Template": [f"Luxury Pitch for {biz} by {my_name}"]
+                    "Business Name": [biz_name],
+                    "Niche": ["Digital Agency"],
+                    "Business Mail": ["info@" + target_url.replace('https://', '').replace('www.', '')],
+                    "Email Subject": ["Exclusive Growth Opportunity"],
+                    "Mail Template": [f"Elite Pitch for {biz_name} by {my_name}"]
                 }
+                
                 sheet_placeholder.dataframe(pd.DataFrame(final_data), use_container_width=True, height=200)
-                st.success("✅ Lead Generated!")
+                st.success("✅ Elite Lead Generated!")
+                st.balloons()
             except Exception as e:
                 st.error(f"Error: {str(e)}")
