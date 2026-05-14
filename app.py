@@ -1,99 +1,98 @@
 import streamlit as st
 import pandas as pd
 import requests
-import io
 import random
 
-# --- 1. BRANDING & STYLE ---
-st.set_page_config(page_title="Rankiva Hub | Professional Outreach Engine", layout="wide")
+# --- 1. SETTINGS & STYLING (THE LOOK YOU WANT) ---
+st.set_page_config(page_title="Rankiva AI Specialist", layout="wide")
 
 st.markdown("""
     <style>
-    .stApp { background-color: #ffffff; color: #1a1c1d; }
-    section[data-testid="stSidebar"] { background-color: #f8f9fa; border-right: 1px solid #e1e4e8; }
-    .report-card { background-color: #f8f9fa; padding: 30px; border: 1px solid #e1e4e8; border-radius: 8px; }
-    .copy-box { background-color: #ffffff; border: 1px solid #ff9000; padding: 15px; border-radius: 5px; font-family: 'Courier New', monospace; }
+    .stApp { background-color: #0e1117; color: #e0e0e0; }
+    /* Sidebar Chat Style */
+    section[data-testid="stSidebar"] { background-color: #161b22; border-right: 1px solid #30363d; min-width: 280px; }
+    .chat-history-item { padding: 10px; border-radius: 8px; margin-bottom: 5px; background: #21262d; color: #c9d1d9; font-size: 14px; border: 1px solid #30363d; }
+    
+    /* Result Columns */
+    .output-column { background: #1c2128; border: 1px solid #30363d; padding: 20px; border-radius: 12px; min-height: 250px; }
+    .label-style { color: #8b949e; font-size: 13px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+    
+    /* Buttons */
     div.stButton > button:first-child {
-        background-color: #ff9000 !important; color: white !important;
-        height: 50px; width: 100%; font-weight: bold; border-radius: 4px; border: none;
+        background: linear-gradient(90deg, #ff9000, #ff5e00) !important; color: white !important;
+        border: none !important; border-radius: 8px !important; font-weight: bold !important; width: 100% !important; height: 45px !important;
     }
+    input, textarea { background-color: #0d1117 !important; border: 1px solid #30363d !important; color: white !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. SIDEBAR ---
+# --- 2. SIDEBAR (HISTORY & KEY) ---
 with st.sidebar:
-    st.markdown("### ⚙️ Outreach Settings")
+    st.markdown("### 💬 Chat History")
+    st.markdown('<div class="chat-history-item">🔍 Audit: redeepseek.com</div>', unsafe_allow_html=True)
+    st.markdown('<div class="chat-history-item">📧 Outreach: Real Estate UK</div>', unsafe_allow_html=True)
+    st.divider()
     grq_key = st.text_input("Enter Groq API Key", type="password")
     st.divider()
-    st.write("**Specialist:** Hafiz Amir Shahzad")
-    st.caption("SEO Specialist | Rankiva Hub")
+    st.caption("Specialist: Hafiz Amir Shahzad")
+    st.caption("Agency: Rankiva Hub")
 
-# --- 3. MAIN UI ---
-st.markdown('<h1 style="color:#1a1c1d;">Rankiva Outreach Engine</h1>', unsafe_allow_html=True)
-st.markdown('<p style="color:#525c65;">Analyze Ahrefs data and generate human-style personalized outreach emails.</p>', unsafe_allow_html=True)
+# --- 3. MAIN INTERFACE ---
+st.markdown("<h2 style='margin-bottom:0;'>Rankiva Intelligent Auditor</h2>", unsafe_allow_html=True)
+st.markdown("<p style='color:#8b949e;'>Deep Search & Specialized Outreach System</p>", unsafe_allow_html=True)
 
-col1, col2 = st.columns(2)
-with col1:
-    target_url = st.text_input("Website URL", value="https://redeepseek.com")
-    biz_name = st.text_input("Business Name", value="Redeepseek")
-with col2:
-    owner_name = st.text_input("Owner Name", value="Not Found")
-    biz_email = st.text_input("Business Email", value="Not Found")
+# Input Section
+target_url = st.text_input("Target URL", placeholder="https://example.com")
+raw_data = st.text_area("Paste Ahrefs Data / Ask something...", height=150)
 
-st.markdown("### 📋 Paste Ahrefs Broken Link Data")
-raw_data = st.text_area("Ahrefs table yahan paste karein", height=150)
-
-# --- 4. ROTATION LOGIC & PROMPT ---
-if st.button("Generate Personalized Outreach"):
-    if not raw_data or not grq_key:
-        st.error("Data aur API Key lazmi hai.")
+if st.button("Run Deep Analysis"):
+    if not grq_key or not raw_data:
+        st.error("Please provide your Groq Key and Data first.")
     else:
-        # Template selection (Rotating automatically)
-        template_choice = random.choice([1, 2, 3])
-        
-        with st.spinner(f"Generating Outreach using Template {template_choice}..."):
+        template_id = random.choice([1, 2, 3])
+        with st.spinner("Processing like Grok..."):
             try:
-                # Process data for the prompt
-                data_io = io.StringIO(raw_data)
-                df = pd.read_csv(data_io, sep='\t').head(5)
-                broken_sample = df.to_string()
-
-                # Professional AI Prompt with Strict Rules
                 prompt = f"""
-                You are a professional SEO specialist Hafiz Amir Shahzad from Rankiva Hub.
-                Task: Write a personalized outreach email for {biz_name} ({target_url}).
+                Act as a professional SEO Specialist Hafiz Amir Shahzad.
+                Analyze this data for {target_url}: {raw_data[:1500]}
+                Use Template {template_id} style but keep it human.
                 
-                Data:
-                Broken Links Found: {broken_sample}
-                Owner: {owner_name}
-                
-                STRICT RULES:
-                - Use Template {template_choice} style as a base but rewrite it to feel human.
-                - No emojis. No Roman Urdu. No marketing buzzwords.
-                - Tone: Calm, professional, and helpful.
-                - Mention the broken link naturally.
-                - Create urgency without being aggressive.
-                - Follow the STRICT OUTPUT FORMAT provided in your instructions.
+                Format the output exactly:
+                SUBJECT: [Subject]
+                ---
+                BODY: [Email Body]
                 """
-
+                
                 res = requests.post("https://api.groq.com/openai/v1/chat/completions", 
                                      headers={"Authorization": f"Bearer {grq_key}"},
                                      json={"model": "llama-3.3-70b-versatile", "messages": [{"role": "user", "content": prompt}]}).json()
                 
-                st.session_state.final_output = res['choices'][0]['message']['content']
-                st.session_state.audit_ready = True
-            except Exception as e:
-                st.error("Processing failed. Make sure data is copied correctly.")
+                full_content = res['choices'][0]['message']['content']
+                
+                if "---" in full_content:
+                    st.session_state.sub_final = full_content.split("---")[0].replace("SUBJECT:", "").strip()
+                    st.session_state.body_final = full_content.split("---")[1].replace("BODY:", "").strip()
+                else:
+                    st.session_state.sub_final = f"Quick note regarding {target_url}"
+                    st.session_state.body_final = full_content
+                
+                st.session_state.ready = True
+            except:
+                st.error("API Connection Error.")
 
-# --- 5. OUTPUT DISPLAY ---
-if 'audit_ready' in st.session_state:
+# --- 4. DUAL COLUMN OUTPUT ---
+if 'ready' in st.session_state:
     st.divider()
-    st.markdown("### ✉️ Final Outreach Result")
+    col1, col2 = st.columns([1, 2])
     
-    # Displaying the structured output
-    st.markdown('<div class="report-card">', unsafe_allow_html=True)
-    st.text(st.session_state.final_output)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.button("🔄 Generate Another (Rotate Template)")
-    
+    with col1:
+        st.markdown('<div class="label-style">Generated Subject</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="output-column">{st.session_state.sub_final}</div>', unsafe_allow_html=True)
+        
+    with col2:
+        st.markdown('<div class="label-style">Professional Email Content</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="output-column">{st.session_state.body_final}</div>', unsafe_allow_html=True)
+
+# --- 5. CHAT INPUT (BOTTOM) ---
+st.divider()
+st.chat_input("Follow-up: 'Make it more urgent' or 'Translate to English'...")
