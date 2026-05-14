@@ -2,8 +2,8 @@ import streamlit as st
 import requests
 import json
 
-# --- 1. PAGE SETUP & THEME (Rankiva Branding) ---
-st.set_page_config(page_title="Rankiva Agency AI", page_icon="🌿", layout="wide")
+# --- 1. PAGE SETUP (Agency Design) ---
+st.set_page_config(page_title="Rankiva Link Hunter", page_icon="🔗", layout="wide")
 
 st.markdown("""
     <style>
@@ -11,105 +11,80 @@ st.markdown("""
     .header-container { display: flex; align-items: center; margin-top: -50px; margin-bottom: 25px; }
     .css-logo { width: 50px; height: 50px; background: radial-gradient(circle at 30% 30%, #57ff91, #1e5631); border-radius: 50%; margin-right: 15px; box-shadow: 0 0 15px #00ff7f; border: 2px solid #00ff7f; }
     .brand-title { color: #00ff7f !important; font-size: 38px !important; font-weight: 800; margin: 0; }
-    
     .stTextInput>div>div>input { background-color: #0a1f0a !important; color: #00ff7f !important; border: 2px solid #2e8b57 !important; height: 48px; }
     .stButton>button { background: linear-gradient(90deg, #1e5631, #00ff7f) !important; color: #040d04 !important; font-weight: bold !important; height: 48px; border-radius: 8px !important; width: 100%; }
-    
-    /* Agency Table Display */
-    .agency-table { width: 100%; border-collapse: collapse; border: 1px solid #2e8b57; background-color: #0a1f0a; border-radius: 12px; overflow: hidden; margin-bottom: 30px; }
-    .agency-table th { background-color: #1a3a1e; color: #00ff7f !important; padding: 15px; text-align: left; border: 1px solid #2e8b57; font-size: 15px; width: 25%; }
-    .agency-table td { padding: 15px; border: 1px solid #1e3a1e; font-size: 14px; vertical-align: top; color: #d0f0d0; line-height: 1.6; }
-    
+    .report-box { background-color: #0a1f0a; border: 1px solid #2e8b57; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
     section[data-testid="stSidebar"] { background-color: #0a1f0a; border-right: 1px solid #2e8b57; }
-    .section-label { color: #00ff7f !important; font-size: 20px !important; font-weight: bold; margin-bottom: 15px; padding-left: 10px; border-left: 5px solid #00ff7f; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. SIDEBAR CONFIG ---
+# --- 2. SIDEBAR ---
 with st.sidebar:
     st.header("🔑 SYSTEM ACCESS")
     ser_key = st.text_input("Serper API Key", type="password")
     gem_key = st.text_input("Gemini API Key", type="password")
     grq_key = st.text_input("Groq API Key", type="password")
-    st.markdown("---")
-    st.info("Hafiz Amir Shahzad\nSenior SEO Specialist\nRankiva Hub")
+    st.info("Hafiz Amir Shahzad - SEO Strategist")
 
-# --- 3. BRANDING ---
-st.markdown('<div class="header-container"><div class="css-logo"></div><div class="brand-title">RANKIVA AGENCY ENGINE</div></div>', unsafe_allow_html=True)
+# --- 3. HEADER ---
+st.markdown('<div class="header-container"><div class="css-logo"></div><div class="brand-title">RANKIVA BROKEN LINK HUNTER</div></div>', unsafe_allow_html=True)
 
-# --- 4. INPUT SECTION ---
-col_url, col_btn = st.columns([3, 1])
-with col_url:
-    url_target = st.text_input("Analysis URL", placeholder="Paste website link here...", label_visibility="collapsed")
-with col_btn:
-    start_btn = st.button("🚀 START STRATEGIC ANALYSIS")
+# --- 4. ACTION AREA ---
+url_target = st.text_input("Target Domain or Keyword", placeholder="example.com or 'SEO Services London'")
+col1, col2 = st.columns(2)
+with col1:
+    find_broken = st.button("🔍 FIND BROKEN LINKS")
+with col2:
+    if st.button("🔄 CLEAR"):
+        st.session_state.broken_leads = []
+        st.rerun()
 
-if st.button("🔄 CLEAR DATA"):
-    st.session_state.agency_leads = []
-    st.rerun()
-
-# --- 5. THE STRATEGIST ENGINE ---
-def run_agency_analysis(url, s_api, g_api, q_api):
+# --- 5. BROKEN LINK ENGINE ---
+def hunt_broken_links(query, s_api, q_api):
     try:
-        # Step 1: Deep Search using Serper
-        search_q = f'"{url}" business owner, contact email, top 2 organic competitors, niche services'
+        # Serper Queries to find potentially broken pages or 404 mentions
+        # Hum "inurl:404" ya "site:domain 'not found'" use kar sakte hain
+        search_q = f'site:{query} "404 not found" OR "page not found" OR "broken link"'
         search_data = requests.post("https://google.serper.dev/search", 
                                    headers={'X-API-KEY': s_api, 'Content-Type': 'application/json'},
                                    json={"q": search_q}).json()
         
-        # Step 2: Advanced Brain (Groq with Llama 3.3 for Human Writing)
         q_headers = {"Authorization": f"Bearer {q_api}", "Content-Type": "application/json"}
         
+        # Groq Strategy for Broken Link Outreach
         prompt = f"""
-        Act as a Senior SEO Outreach Strategist. 
-        Analyze the following data for {url}: {str(search_data)[:1000]}
+        Analyze these search results for broken links: {str(search_data)[:1000]}
         
-        Follow these steps strictly:
-        1. Extract: Business Name, Owner (if any), Niche, Location, and Business Email.
-        2. Identify 2 Competitors and their SEO advantage over {url}.
-        3. Identify 3 critical SEO Gaps (e.g. missing high-intent pages, weak conversion, topical authority).
-        4. Write ONE highly personalized email:
-           - Start with asking about their well-being.
-           - Compliment their specific work or site messaging.
-           - Mention 2 specific observations about their site.
-           - Naturally bridge into SEO gaps using competitor examples.
-           - Tone: Human consultant, calm, NO marketing hype, simple English.
-           - NO buzzwords like 'game changer' or 'unlock'.
-        
-        Sign-off: 
-        Best regards, 
-        Hafiz Amir Shahzad 
-        SEO Specialist 
-        Rankiva hub
+        Task:
+        1. Identify any potential broken URLs.
+        2. Write a highly professional outreach email to the site owner.
+        3. Logic: 
+           - Tell them you were reading their site and found a broken link.
+           - Politely suggest your content/service as a replacement.
+           - Keep it helpful, not salesy.
+        4. Sign-off: Best regards, Hafiz Amir Shahzad, SEO Specialist, Rankiva Hub.
         """
         
         response = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=q_headers, 
                                  json={"model": "llama-3.3-70b-versatile", "messages": [{"role": "user", "content": prompt}]}).json()
         
-        final_report = response['choices'][0]['message']['content']
-        return final_report
+        return response['choices'][0]['message']['content']
     except Exception as e:
-        return f"System Error: {str(e)}"
+        return f"Hunter Error: {str(e)}"
 
-# --- 6. OUTPUT & DISPLAY ---
-if 'agency_leads' not in st.session_state: st.session_state.agency_leads = []
+# --- 6. OUTPUT ---
+if 'broken_leads' not in st.session_state: st.session_state.broken_leads = []
 
-if start_btn:
-    if not all([ser_key, gem_key, grq_key, url_target]):
-        st.warning("Please configure all API keys in the sidebar.")
+if find_broken:
+    if not all([ser_key, grq_key, url_target]):
+        st.warning("Please enter API keys and a URL/Keyword.")
     else:
-        with st.spinner("Analyzing Business, Gaps, and Competitors..."):
-            report = run_agency_analysis(url_target, ser_key, gem_key, grq_key)
-            st.session_state.agency_leads.append({"url": url_target, "report": report})
+        with st.spinner("Hunting for broken links and crafting outreach..."):
+            report = hunt_broken_links(url_target, ser_key, grq_key)
+            st.session_state.broken_leads.append(report)
 
-st.markdown('<div class="section-label">📜 STRATEGIC REPORTS</div>', unsafe_allow_html=True)
-
-if st.session_state.agency_leads:
-    for item in st.session_state.agency_leads:
-        with st.container():
-            st.markdown(f"### Analysis for: {item['url']}")
-            # Text area with high height for full readability
-            st.text_area("Full Agency Report (Analysis + Email)", value=item['report'], height=600)
-            st.markdown("---")
-else:
-    st.info("No research data found. Start by entering a URL.")
+if st.session_state.broken_leads:
+    for r in st.session_state.broken_leads:
+        st.markdown('<div class="report-box">', unsafe_allow_html=True)
+        st.write(r)
+        st.markdown('</div>', unsafe_allow_html=True)
