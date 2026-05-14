@@ -124,4 +124,3 @@ if start_btn:
                 )
             except Exception as e:
                 st.error(f"Something went wrong: {str(e)}")
-                
