@@ -96,3 +96,4 @@ if 'audit_ready' in st.session_state:
     st.markdown('</div>', unsafe_allow_html=True)
     
     st.button("🔄 Generate Another (Rotate Template)")
+    
